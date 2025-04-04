@@ -1,0 +1,103 @@
+<!-- Include Swiper.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+
+<%- include('./partials/header') %>
+
+<div class="w-full flex flex-col items-center py-10">
+    <!-- Swiper Container -->
+    <div class="swiper w-[60%]">
+        <div class="swiper-wrapper" id="cart_items">
+            <% if (user.cart.length > 0) { %>
+                <% user.cart.forEach(function(item, index) { %>
+                    <div class="swiper-slide flex items-center gap-10 p-6 rounded-2xl bg-white shadow-md" id="product_<%= index %>">
+                        <!-- Product Image -->
+                        <div class="w-1/3 flex justify-center items-center h-80 rounded-2xl" style="background-color:<%= item.bgcolor %>;">
+                            <img class="h-[18rem] rounded-lg" src="data:image/jpeg;base64,<%= item.image.toString('base64') %>" alt="">
+                        </div>
+
+                        <!-- Price Breakdown -->
+                        <div class="w-2/3 bg-gray-100 p-6 rounded-2xl flex flex-col justify-between h-80">
+                            <h2 class="text-2xl font-bold mb-2"><%= item.name %></h2>
+                            <div class="mb-2">Price: ₹<span class="price" data-index="<%= index %>"><%= item.price %></span></div>
+                            <div class="mb-2">Discount: ₹<span class="discount" data-index="<%= index %>"><%= item.discount %></span></div>
+                            <div class="mb-2">Platform Fee: ₹20</div>
+
+                            <!-- Quantity Selector -->
+                            <div class="flex items-center gap-4 mb-4">
+                                <button onclick="updateQuantity(<%= index %>, -1)" class="px-4 py-2 bg-red-500 text-white rounded-full">-</button>
+                                <span id="quantity_<%= index %>" class="text-lg font-semibold">1</span>
+                                <button onclick="updateQuantity(<%= index %>, 1)" class="px-4 py-2 bg-green-500 text-white rounded-full">+</button>
+                            </div>
+
+                            <h3 class="text-xl font-semibold">Total: ₹<span id="total_<%= index %>"><%= (Number(item.price) + 20 - Number(item.discount)) %></span></h3>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div class="text-center text-2xl p-10">Your cart is empty.</div>
+            <% } %>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+    </div>
+
+    <!-- Grand Total Section -->
+    <div class="w-[60%] mt-10 bg-gray-200 p-6 rounded-2xl text-xl font-semibold text-center">
+        Grand Total: ₹<span id="grand_total">0</span>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var swiper = new Swiper('.swiper', {
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            loop: false,
+            slidesPerView: 1,
+            spaceBetween: 10,
+        });
+
+        updateGrandTotal();
+    });
+
+    let userCart = <%- JSON.stringify(user.cart) %>;
+
+    function updateQuantity(index, change) {
+        let quantityElem = document.getElementById(`quantity_${index}`);
+        let totalElem = document.getElementById(`total_${index}`);
+        let productElem = document.getElementById(`product_${index}`);
+
+        let price = Number(document.querySelector(`.price[data-index='${index}']`).innerText);
+        let discount = Number(document.querySelector(`.discount[data-index='${index}']`).innerText);
+        let platformFee = 20;
+
+        let quantity = Number(quantityElem.innerText) + change;
+
+        if (quantity < 1) {
+            productElem.remove();  // Remove from UI
+            userCart = userCart.filter((_, i) => i !== index); // Remove from cart array
+            updateGrandTotal();
+            return;
+        }
+
+        quantityElem.innerText = quantity;
+        let newTotal = (price - discount + platformFee) * quantity;
+        totalElem.innerText = newTotal;
+        updateGrandTotal();
+    }
+
+    function updateGrandTotal() {
+        let grandTotal = 0;
+        document.querySelectorAll('[id^=total_]').forEach(el => {
+            grandTotal += Number(el.innerText);
+        });
+        document.getElementById('grand_total').innerText = grandTotal;
+    }
+</script>
+
+<%- include('./partials/footer') %>
